@@ -14,7 +14,8 @@ using namespace std;
 
 
 enum card {
-	TWO = 2,
+	J = 1,
+	TWO,
 	THREE,
 	FOUR,
 	FIVE,
@@ -23,7 +24,6 @@ enum card {
 	EIGHT,
 	NINE,
 	T,
-	J,
 	Q,
 	K,
 	A
@@ -62,10 +62,17 @@ class Hand {
 
 	enum handType get_type(){
 		std::set<enum card> unic = set(begin(cards), end(cards));
+		int jcount = count(cards, cards+5, J);
+
 		if (unic.size() == 1)
 			return FIVE_KIND;
+
 		if (unic.size() == 2) {
 			int repeated = count(cards, cards+5, *unic.begin());
+
+			if (unic.find(J) != unic.end())
+				return FIVE_KIND;
+
 			if (repeated == 4 || repeated == 1)
 				return FOUR_KIND;
 			else
@@ -80,13 +87,27 @@ class Hand {
 			it++;
 			int repeated3 = count(cards, cards+5, *it);
 
-			if (repeated1 == 3 || repeated2 == 3 || repeated3 == 3)
+			if (repeated1 == 3 || repeated2 == 3 || repeated3 == 3) {
+				if (jcount == 3 || jcount == 1)
+					return FOUR_KIND;
 				return THREE_KIND;
-			else
+			}
+			else {
+				if (jcount == 2)
+					return FOUR_KIND;
+				if (jcount == 1)
+					return THREE_KIND;
 				return TWO_PAIR;
+			}
 		}
 
-		if (unic.size() == 4)
+		if (unic.size() == 4) {
+			if (jcount == 2 || jcount == 1)
+				return THREE_KIND;
+			return ONE_PAIR;
+		}
+
+		if (jcount == 1)
 			return ONE_PAIR;
 
 		return HIGH_CARD;
@@ -162,14 +183,13 @@ bool sortingFunction(Hand h1, Hand h2)
 	return true;
 }
 
-// 249143334 TOO LOW
-// 249314582 TOO LOW
+// 252055431 TOO LOW
 
 int main (void)
 {
 	vector<Hand> hands;
 
-	string filename = "input.txt";
+	string filename = "sample.txt";
 	ifstream mFile(filename);
 
 	if (!mFile.is_open()) {
@@ -211,7 +231,7 @@ int main (void)
 
 	cout << "last value=" << value << endl;
 
-	cout << "The response part one is: " << output << endl;
+	cout << "The response part two is: " << output << endl;
 
 	return 0;
 }
