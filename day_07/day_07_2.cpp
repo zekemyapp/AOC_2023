@@ -61,7 +61,9 @@ class Hand {
 	}
 
 	enum handType get_type(){
-		std::set<enum card> unic = set(begin(cards), end(cards));
+		std::set<enum card> unic;
+		for (int i=0; i<5; i++)
+			unic.insert(cards[i]);
 		int jcount = count(cards, cards+5, J);
 
 		if (unic.size() == 1)
@@ -70,7 +72,7 @@ class Hand {
 		if (unic.size() == 2) {
 			int repeated = count(cards, cards+5, *unic.begin());
 
-			if (unic.find(J) != unic.end())
+			if (jcount > 0)
 				return FIVE_KIND;
 
 			if (repeated == 4 || repeated == 1)
@@ -88,7 +90,7 @@ class Hand {
 			int repeated3 = count(cards, cards+5, *it);
 
 			if (repeated1 == 3 || repeated2 == 3 || repeated3 == 3) {
-				if (jcount == 3 || jcount == 1)
+				if (jcount > 0)
 					return FOUR_KIND;
 				return THREE_KIND;
 			}
@@ -96,7 +98,7 @@ class Hand {
 				if (jcount == 2)
 					return FOUR_KIND;
 				if (jcount == 1)
-					return THREE_KIND;
+					return FULL_HOUSE;
 				return TWO_PAIR;
 			}
 		}
@@ -189,7 +191,7 @@ int main (void)
 {
 	vector<Hand> hands;
 
-	string filename = "sample.txt";
+	string filename = "input.txt";
 	ifstream mFile(filename);
 
 	if (!mFile.is_open()) {
