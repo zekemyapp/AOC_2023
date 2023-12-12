@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <vector>
 #include <tuple>
+#include <unordered_map>
+
+std::unordered_map<std::string, uint64_t> memo;
+
 
 /* count the number of broken springs in a complete line
    and stores it in ncount */
@@ -59,8 +63,23 @@ uint64_t count_posibilities(std::string line, std::vector<int> clues, int positi
 	std::string new_line2(line);
 	new_line2.at(position) = '.';
 
-	uint64_t count = count_posibilities(new_line1, clues, position+1);
-	count += count_posibilities(new_line2, clues, position+1);
+	uint64_t count = 0;
+	if (memo.find(new_line1) != memo.end()) {
+		count = memo[new_line1];
+	} else {
+		// Cache the result
+		memo[new_line1] = count_posibilities(new_line1, clues, position);
+        	count = memo[new_line1];
+	}
+
+	if (memo.find(new_line2) != memo.end()) {
+		count += memo[new_line2];
+	} else {
+		// Cache the result
+		memo[new_line2] = count_posibilities(new_line2, clues, position+1);
+		count += memo[new_line2];
+	}
+
 	return count;
 }
 
@@ -82,8 +101,13 @@ int main (void) {
 	while (!input_file.eof()) {
 		getline(input_file, file_content);
 		size_t div = file_content.find(' ');
-		std::string line = file_content.substr(0, div);
-		std::string clus_str = file_content.substr(div, std::string::npos);
+		std::string pre_line = file_content.substr(0, div);
+		std::string pre_clus_str = file_content.substr(div+1, std::string::npos);
+
+		std::string line = pre_line + '?' + pre_line + '?' + pre_line + '?' + pre_line + '?' + pre_line;
+		std::string clus_str = pre_clus_str + ',' + pre_clus_str + ',' + pre_clus_str + ',' + pre_clus_str + ',' + pre_clus_str;
+
+		std::cout << "testing line: " << line << "; with clues: " << clus_str << std::endl;
 
 		std::stringstream ss(clus_str);
 		std::vector<int> clues;
@@ -94,6 +118,7 @@ int main (void) {
 			clues.push_back(atoi(substr.c_str()));
 		}
 		
+		memo.clear();
 		int possibilities = count_posibilities(line, clues);
 		result += possibilities;
 
