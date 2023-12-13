@@ -106,7 +106,7 @@ uint64_t count_posibilities(std::string line, std::vector<int> clues) {
 }
 
 int main (void) {
-	std::cout << "Starting day 11" << std::endl;
+	std::cout << "Starting day 12" << std::endl;
 
 	std::string filename = "input.txt";
 	std::ifstream input_file(filename);

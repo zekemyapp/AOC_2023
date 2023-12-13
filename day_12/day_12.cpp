@@ -65,7 +65,7 @@ uint64_t count_posibilities(std::string line, std::vector<int> clues, int positi
 }
 
 int main (void) {
-	std::cout << "Starting day 11" << std::endl;
+	std::cout << "Starting day 12" << std::endl;
 
 	std::string filename = "sample.txt";
 	std::ifstream input_file(filename);
@@ -87,18 +87,18 @@ int main (void) {
 
 		std::stringstream ss(clus_str);
 		std::vector<int> clues;
- 
+
 		while (ss.good()) {
 			std::string substr;
 			getline(ss, substr, ',');
 			clues.push_back(atoi(substr.c_str()));
 		}
-		
+
 		int possibilities = count_posibilities(line, clues);
 		result += possibilities;
 
 		std::cout << "possibilities: " << possibilities << std::endl;
-	}	
+	}
 
 	std::cout << "the result is " << result << std::endl;
 
