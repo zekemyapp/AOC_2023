@@ -6,48 +6,48 @@
 #include <tuple>
 #include <unordered_map>
 #include <iterator>
+#include <functional>
+#include <numeric>
 
 std::unordered_map<std::string, uint64_t> memo;
 
+uint64_t count_posibilities(std::string line, std::vector<int> clues) {
+	uint64_t count;
 
-/* count the number of broken springs in a complete line
-   and stores it in ncount */
-void parse_springs(std::string springs, std::vector<int> &ncount)
-{
-	// std::cout << "Checking line: " << springs << " ";
-	size_t nunknown = std::count(springs.begin(), springs.end(), '?');
-	if (nunknown > 0)
-		return;
-
-	size_t first = springs.find_first_of('#');
-
-	while (first != std::string::npos) {
-		size_t last = springs.find_first_of('.', first);
-		if (last == std::string::npos)
-			last = springs.size();
-		int count = last - first;
-		ncount.push_back(count);
-		first = springs.find_first_of('#', last);
+	if (clues.size() == 0 || (clues.size() == 1 and clues.at(0) == 0)) {
+		if (line.find('#') == std::string::npos)
+			// Only . or ? left on the string while all # have been used
+			return 1;
+		else
+			// Used all the # too early
+			return 0;
 	}
 
-	// for (auto c : ncount) {
-	// 	std::cout << c << " ";
-	// }
-	// std::cout << std::endl;
-}
+	// Not enough chars to fulfill all the clues
+	if (std::accumulate(clues.begin(), clues.end(), 0) > line.size())
+		return 0;
 
-bool check_springs(std::string springs, std::vector<int> clues)
-{
-	std::vector<int> ncount;
-	parse_springs(springs, ncount);
+	// Last character of a run
+	if (line.size() == 1) {
+		if (line.at(0) == '#') {
+			if (clues.size() == 1 and clues.at(0) == 1)
+				return 1;
+			else
+				return 0;
+		}
 
-	if (ncount == clues)
-		return true;
+		if (line.at(0) == '.')
+			if (clues.size() == 0 || (clues.size() == 1 and clues.at(0) == 0))
+				return 1;
+			else
+				return 0;
 
-	return false;
-}
+		// ???
+		count = count_posibilities(".", clues);
+		count += count_posibilities("#", clues);
+		return count;
+	}
 
-uint64_t count_posibilities(std::string line, std::vector<int> clues, int position = 0) {
 	std::stringstream clue_str;
 	std::copy(clues.begin(), clues.end(), std::ostream_iterator<int>(clue_str, ","));
 	std::string key = line + ";" + clue_str.str();
@@ -57,57 +57,58 @@ uint64_t count_posibilities(std::string line, std::vector<int> clues, int positi
 		return memo[key];
 	}
 
-	int n = clues.at(0);
-	size_t ref = line.find_first_of("#?");
+	char val = line.at(0);
+	std::string new_line = line.substr(1, line.size()-1);
 
-	if (line.at(ref) == '?') {
-		
+	if (clues.at(0) == 0) {
+		if (line.at(0) == '.') {
+			clues.erase(clues.begin());
+		} else if (line.at(0) == '#') {
+			return 0;
+		} else {
+			count = count_posibilities("." + new_line, clues);
+			count += count_posibilities("#" + new_line, clues);
+			memo[key] = count;
+			return count;
+		}
 	}
 
-	std::string new_line = line.substr(ref + , std::string::npos);
-
-	if (position == line.size()) {
-		if (check_springs(line, clues))
-			return 1;
-		return 0;
+	if (val == '.') {
+		count = count_posibilities(new_line, clues);
+		memo[key] = count;
+		return count;
 	}
 
-	char c = line.at(position);
-	if (c != '?') {
-		return count_posibilities(line, clues, position + 1);
+	if (val == '#') {
+		clues.at(0) = clues.at(0) - 1;
+
+		if (clues.at(0) > 0) {
+			if (new_line.at(0) == '.')
+				return 0;
+			else if (new_line.at(0) == '?') {
+				new_line.at(0) = '#'; // Version with '.' should be zero
+				count = count_posibilities(new_line, clues);
+				memo[key] = count;
+				return count;
+			}
+		}
+
+		count = count_posibilities(new_line, clues);
+		memo[key] = count;
+		return count;
 	}
 
-	std::string new_line1(line);
-	new_line1.at(position) = '#';
-	std::string new_line2(line);
-	new_line2.at(position) = '.';
-
-	// uint64_t count = 0;
-	// if (memo.find(new_line1) != memo.end()) {
-	// 	count = memo[new_line1];
-	// } else {
-	// 	// Cache the result
-	// 	memo[new_line1] = count_posibilities(new_line1, clues, position);
-        // 	count = memo[new_line1];
-	// }
-
-	// if (memo.find(new_line2) != memo.end()) {
-	// 	count += memo[new_line2];
-	// } else {
-	// 	// Cache the result
-	// 	memo[new_line2] = count_posibilities(new_line2, clues, position+1);
-	// 	count += memo[new_line2];
-	// }
-
-	uint64_t count = count_posibilities(new_line1, clues, position+1);
-	count += count_posibilities(new_line2, clues, position+1);
+	// ??
+	count = count_posibilities("." + new_line, clues);
+	count += count_posibilities("#" + new_line, clues);
+	memo[key] = count;
 	return count;
 }
 
 int main (void) {
 	std::cout << "Starting day 11" << std::endl;
 
-	std::string filename = "sample.txt";
+	std::string filename = "input.txt";
 	std::ifstream input_file(filename);
 	std::string file_content;
 	uint64_t result = 0;
@@ -128,10 +129,8 @@ int main (void) {
 		std::string line = pre_line;
 		std::string clus_str = pre_clus_str;
 
-		int possibilities = 0;
+		uint64_t possibilities = 0;
 		for (int i=0; i<5; i++) {
-			std::cout << "testing line: " << line << "; with clues: " << clus_str << std::endl;
-
 			std::stringstream ss(clus_str);
 			std::vector<int> clues;
 
@@ -142,7 +141,6 @@ int main (void) {
 			}
 
 			possibilities = count_posibilities(line, clues);
-			std::cout << "possibilities: " << possibilities << std::endl;
 
 			line = line + '?' + pre_line;
 			clus_str = clus_str + ',' + pre_clus_str;
@@ -151,7 +149,6 @@ int main (void) {
 		result += possibilities;
 	}
 
-	std::cout << "the result is " << result << std::endl;
-
+	std::cout << "the result for input is " << result << std::endl;
 	return 0;
 }
