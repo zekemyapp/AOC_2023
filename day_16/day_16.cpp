@@ -42,7 +42,6 @@ int count_energy(std::vector<std::vector<char>> maze)
 	return out;
 }
 
-// #include <bits/stdc++.h>
 struct hashFunction
 {
   size_t operator()(const Position&x) const
