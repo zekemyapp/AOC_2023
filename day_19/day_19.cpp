@@ -25,11 +25,11 @@ class Part {
 };
 
 class Condition {
-	private:
+	public:
 		enum Type {LT, GT, TYPE_A, TYPE_R, DIRECT};
 		enum Component {X, M, A, S};
 
-	private:
+	public:
 		Type type;
 		Component comp;
 		int64_t val;
@@ -50,6 +50,8 @@ class Condition {
 			case S:
 				return xmas.s;
 			}
+
+			return 0;
 		}
 
 		Component c2comp (char ccomp) {
@@ -64,6 +66,8 @@ class Condition {
 			case 's':
 				return S;
 			}
+
+			return X;
 		}
 
 		Type c2type (char ctype) {
@@ -132,7 +136,6 @@ typedef std::unordered_map<std::string, Workflow> WorkflowMap;
 class Workflow {
 	public:
 		std::string id;
-	private:
 		std::vector<Condition> conds;
 
 	public:
@@ -160,10 +163,114 @@ class Workflow {
 		}
 };
 
+struct range {
+	int64_t x_s, x_e;
+	int64_t m_s, m_e;
+	int64_t a_s, a_e;
+	int64_t s_s, s_e;
+};
+
+int64_t solve_for(WorkflowMap works, Workflow w, struct range r, int ncond = 0)
+{
+	if (w.conds.size() <= ncond)
+		return 0;
+
+	Condition::Type type = w.conds[ncond].type;
+	Condition::Component comp = w.conds[ncond].comp;
+	int64_t val = w.conds[ncond].val;
+	int64_t output = 0;
+
+	if (type == Condition::Type::TYPE_R)
+		return 0;
+	
+	if (type == Condition::Type::TYPE_A) {
+		output = (r.x_e+1 - r.x_s) * (r.m_e+1 - r.m_s) * (r.a_e+1 - r.a_s) * (r.s_e+1 - r.s_s); 
+		return output;
+	}
+
+	if (type == Condition::Type::DIRECT) {
+		output = solve_for(works, works[w.conds[ncond].workflow], r);
+		return output;
+	}
+
+	if (type == Condition::Type::LT) {
+		struct range ra = {
+			.x_s = r.x_s,
+			.x_e = comp == Condition::Component::X ? val-1 : r.x_e,
+			
+			.m_s = r.m_s,
+			.m_e = comp == Condition::Component::M ? val-1 : r.m_e,
+
+			.a_s = r.a_s,
+			.a_e = comp == Condition::Component::A ? val-1 : r.a_e,
+
+			.s_s = r.s_s,
+			.s_e = comp == Condition::Component::S ? val-1 : r.s_e,
+		}; // ra makes the transition
+
+		output += solve_for(works, works[w.conds[ncond].workflow], ra);
+
+		struct range rb = {
+			.x_s = comp == Condition::Component::X ? val : r.x_s,
+			.x_e = r.x_e,
+			
+			.m_s = comp == Condition::Component::M ? val : r.m_s,
+			.m_e = r.m_e,
+
+			.a_s = comp == Condition::Component::A ? val : r.a_s,
+			.a_e = r.a_e,
+
+			.s_s = comp == Condition::Component::S ? val : r.s_s,
+			.s_e = r.s_e,
+		};
+
+		output += solve_for(works, w, rb, ncond+1);
+
+		return output;
+
+	} else {
+		struct range ra = {
+			.x_s = r.x_s,
+			.x_e = comp == Condition::Component::X ? val : r.x_e,
+			
+			.m_s = r.m_s,
+			.m_e = comp == Condition::Component::M ? val : r.m_e,
+
+			.a_s = r.a_s,
+			.a_e = comp == Condition::Component::A ? val : r.a_e,
+
+			.s_s = r.s_s,
+			.s_e = comp == Condition::Component::S ? val : r.s_e,
+		};
+
+		output += solve_for(works, w, ra, ncond+1);
+
+		struct range rb = {
+			.x_s = comp == Condition::Component::X ? val+1 : r.x_s,
+			.x_e = r.x_e,
+			
+			.m_s = comp == Condition::Component::M ? val+1 : r.m_s,
+			.m_e = r.m_e,
+
+			.a_s = comp == Condition::Component::A ? val+1 : r.a_s,
+			.a_e = r.a_e,
+
+			.s_s = comp == Condition::Component::S ? val+1 : r.s_s,
+			.s_e = r.s_e,
+		}; // rb makes the transition
+
+		output += solve_for(works, works[w.conds[ncond].workflow], rb);
+
+		return output;
+	}
+
+	return output;
+}
+
 int main (void) {
 	std::cout << "Starting day 19" << std::endl;
 
-	std::string filename = "sample.txt";
+	std::string filename = "input.txt";
 	std::ifstream input_file(filename);
 	int64_t result_one = 0;
 	int64_t result_two = 0;
@@ -275,5 +382,26 @@ int main (void) {
 	}
 
 	std::cout << "the result one is " << result_one << std::endl;
+
+	struct range r = {
+		.x_s = 1,
+		.x_e = 4000,
+		
+		.m_s = 1,
+		.m_e = 4000,
+
+		.a_s = 1,
+		.a_e = 4000,
+
+		.s_s = 1,
+		.s_e = 4000,
+	};
+
+	std::vector<struct range> ranges;
+	ranges.push_back(r);
+
+	result_two = solve_for(workflows, workflows["in"], r);
+	
+	std::cout << "the result two is " << result_two << std::endl;
 	return 0;
 }
